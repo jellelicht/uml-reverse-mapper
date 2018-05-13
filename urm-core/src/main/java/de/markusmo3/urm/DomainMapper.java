@@ -42,7 +42,7 @@ public class DomainMapper {
     }
 
     public static DomainMapper create(Presenter presenter, List<String> packages, List<String> ignores,
-                                      URLClassLoader classLoader) throws ClassNotFoundException {
+            ClassLoader classLoader) throws ClassNotFoundException {
         List<Class<?>> allClasses = DomainClassFinder.findClasses(packages, ignores, classLoader);
         return new DomainMapper(presenter, allClasses);
     }

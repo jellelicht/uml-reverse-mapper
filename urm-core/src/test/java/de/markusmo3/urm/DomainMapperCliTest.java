@@ -36,13 +36,13 @@ public class DomainMapperCliTest extends DomainMapperCli { // extends to silence
 
     @Test
     public void withMultiPackages() throws Exception {
-        cli.run(new String[]{"-p", "\"de.markusmo3.urm.testdomain.person, de.markusmo3.urm.testdomain.another\""});
+        cli.run(new String[]{"-p", "\"de.markusmo3.urm.testdomain.person,de.markusmo3.urm.testdomain.another\""});
         assertThat(cli.domainMapper.getClasses().size(), is(5));
     }
 
     @Test
     public void withMultiPackagesAndIgnores() throws Exception {
-        cli.run(new String[]{"-p", "\"de.markusmo3.urm.testdomain.person, de.markusmo3.urm.testdomain.another\"", "-i", "\"Employee, Another\""});
+        cli.run(new String[]{"-p", "\"de.markusmo3.urm.testdomain.person,de.markusmo3.urm.testdomain.another\"", "-i", "\"Employee,Another\""});
         assertThat(cli.domainMapper.getClasses().size(), is(3));
     }
 

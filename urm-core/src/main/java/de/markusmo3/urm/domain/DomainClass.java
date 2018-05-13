@@ -21,8 +21,8 @@ public class DomainClass {
 
     private static final Logger log = LoggerFactory.getLogger(DomainClass.class);
 
-    protected static final List<String> IGNORED_METHODS = Arrays.asList("$jacocoInit");
-    protected static final List<String> IGNORED_FIELDS = Arrays.asList("$jacocoData");
+    public static List<String> IGNORED_METHODS = Arrays.asList("$jacocoInit");
+    public static List<String> IGNORED_FIELDS = Arrays.asList("$jacocoData");
 
     private Class<?> clazz;
     private String description;

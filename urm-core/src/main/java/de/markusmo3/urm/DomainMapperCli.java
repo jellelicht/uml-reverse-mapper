@@ -1,16 +1,15 @@
 package de.markusmo3.urm;
 
-import de.markusmo3.urm.presenters.Presenter;
-import de.markusmo3.urm.presenters.Representation;
+import de.markusmo3.urm.domain.*;
+import de.markusmo3.urm.presenters.*;
 import org.apache.commons.cli.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.*;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.io.*;
+import java.net.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.stream.*;
 
 public class DomainMapperCli {
 
@@ -22,27 +21,66 @@ public class DomainMapperCli {
     }
 
     public void run(final String[] args) throws ClassNotFoundException, IOException {
-        // create the command line parser
-        CommandLineParser parser = new BasicParser();
-        // create the Options
+        CommandLineParser parser = new DefaultParser();
         Options options = new Options();
-        options.addOption("f", "file", true, "write to file");
-        options.addOption("p", "package", true, "comma separated list of domain packages");
-        options.addOption(OptionBuilder.withArgName("package").hasArgs().isRequired().create('p'));
-        options.addOption("i", "ignore", true, "comma separated list of ignored types");
-        options.addOption(OptionBuilder.withArgName("ignore").hasArgs().isRequired(false).create('i'));
-        options.addOption("s", "presenter", true, "presenter to be used");
-        options.addOption(OptionBuilder.withArgName("presenter").hasArgs().isRequired(false).create('s'));
+        options.addOption(Option.builder("h").longOpt("help").desc("displays this help text").build());
+        options.addOption(Option.builder("f").argName("file").hasArg()
+                .desc("write result to file instead of console").build());
+        options.addOption(Option.builder("s").longOpt("presenter").argName("[plant|graph]").hasArg()
+                .desc("presenter to be used, defaults to 'plant'").build());
+
+        options.addOption(Option.builder("u").argName("fileList").hasArgs()
+                .valueSeparator(',')
+                .desc("comma separated list of jars or other java files to load").build());
+        options.addOption(Option.builder("p").argName("packageList").hasArgs()
+                .required()
+                .valueSeparator(',')
+                .desc("comma separated list of domain packages").build());
+        options.addOption(Option.builder("i").longOpt("classIgnores").argName("ignoreList").hasArgs()
+                .valueSeparator(',')
+                .desc("comma separated list of ignored types").build());
+        options.addOption(Option.builder("fi").longOpt("fieldIgnores").argName("ignoreList").hasArgs()
+                .valueSeparator(',')
+                .desc("comma separated list of ignored fields, defaults to '$jacocoData'").build());
+        options.addOption(Option.builder("mi").longOpt("methodIgnores").argName("ignoreList").hasArgs()
+                .valueSeparator(',')
+                .desc("comma separated list of ignored methods, defaults to '$jacocoInit'").build());
+
         try {
-            CommandLine line = parser.parse(options, args);
-            String[] packages = line.getOptionValue("p").split(",[ ]*");
-            log.debug("Scanning domain for packages:");
-            for (String packageName : packages) {
-                log.debug(packageName);
+            CommandLine cl = parser.parse(options, args);
+
+            if (cl.hasOption("-h")) {
+                throw new ParseException("help invoked");
             }
+
+            if (cl.hasOption("fi")) {
+                DomainClass.IGNORED_FIELDS = Arrays.asList(cl.getOptionValues("fi"));
+            }
+            if (cl.hasOption("mi")) {
+                DomainClass.IGNORED_METHODS = Arrays.asList(cl.getOptionValues("mi"));
+            }
+            ClassLoader additionalClassLoader = null;
+            if (cl.hasOption("u")) {
+                String[] uStrings = cl.getOptionValues("u");
+                URL[] urlArray = Arrays.stream(uStrings)
+                        .map(s -> {
+                            try {
+                                return new File(s).toURI().toURL();
+                            } catch (MalformedURLException e) {
+                                e.printStackTrace();
+                                return null;
+                            }
+                        })
+                        .filter(Objects::nonNull)
+                        .toArray(URL[]::new);
+                additionalClassLoader = new URLClassLoader(urlArray, getClass().getClassLoader());
+            }
+
+            String[] packages = cl.getOptionValues("p");
+            log.debug("Scanning domain for packages: " + Arrays.toString(packages));
             String[] ignores = null;
-            if (line.hasOption("i")) {
-                ignores = line.getOptionValue("i").split(",[ ]*");
+            if (cl.hasOption("i")) {
+                ignores = cl.getOptionValues("i");
                 if (ignores != null) {
                     log.debug("Ignored types:");
                     for (String ignore : ignores) {
@@ -50,12 +88,13 @@ public class DomainMapperCli {
                     }
                 }
             }
-
-            Presenter presenter = Presenter.parse(line.getOptionValue("i"));
-            domainMapper = DomainMapper.create(presenter, Arrays.asList(packages), ignores == null ? new ArrayList<>() : Arrays.asList(ignores));
+            Presenter presenter = Presenter.parse(cl.getOptionValue("i"));
+            domainMapper = DomainMapper.create(presenter, Arrays.asList(packages),
+                    ignores == null ? new ArrayList<>() : Arrays.asList(ignores),
+                    additionalClassLoader);
             Representation representation = domainMapper.describeDomain();
-            if (line.hasOption('f')) {
-                String filename = line.getOptionValue('f');
+            if (cl.hasOption('f')) {
+                String filename = cl.getOptionValue('f');
                 Files.write(Paths.get(filename), representation.getContent().getBytes());
                 log.info("Wrote to file " + filename);
             } else {
@@ -65,7 +104,12 @@ public class DomainMapperCli {
             log.info(exp.getMessage());
             // automatically generate the help statement
             HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp("java -jar urm-core.jar", options);
+            formatter.printHelp("java -jar urm-core.jar", "", options,
+                    "EXAMPLES:\n" +
+                            "1. java -jar urm-core.jar -p com.iluwatar.abstractfactory " +
+                            "-i com.iluwatar.abstractfactory.Castle -u abstract-factory.jar\n" +
+                            "2. java -cp abstract-factory.jar:urm-core.jar DomainMapperCli " +
+                            "-p com.iluwatar.abstractfactory -i com.iluwatar.abstractfactory.Castle\n");
         }
     }
 }

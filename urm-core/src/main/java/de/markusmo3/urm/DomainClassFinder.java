@@ -1,7 +1,7 @@
 package de.markusmo3.urm;
 
-import com.google.common.collect.Sets;
-import org.reflections.Reflections;
+import com.google.common.collect.*;
+import org.reflections.*;
 import org.reflections.scanners.ResourcesScanner;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -22,7 +22,7 @@ public class DomainClassFinder {
 
     public static ClassLoader[] classLoaders;
 
-    public static List<Class<?>> findClasses(final List<String> packages, List<String> ignores, final URLClassLoader classLoader) {
+    public static List<Class<?>> findClasses(final List<String> packages, List<String> ignores, final ClassLoader classLoader) {
         return packages.stream()
                 .map(packageName -> getClasses(classLoader, packageName))
                 .flatMap(Collection::stream)
@@ -41,7 +41,7 @@ public class DomainClassFinder {
         return !clazz.getSimpleName().equals("");
     }
 
-    private static Set<Class<?>> getClasses(URLClassLoader classLoader, String packageName) {
+    private static Set<Class<?>> getClasses(ClassLoader classLoader, String packageName) {
         List<ClassLoader> classLoadersList = new LinkedList<>();
         classLoadersList.add(ClasspathHelper.contextClassLoader());
         classLoadersList.add(ClasspathHelper.staticClassLoader());
@@ -58,13 +58,15 @@ public class DomainClassFinder {
         }
 
         Reflections reflections = new Reflections(new ConfigurationBuilder()
-                .setScanners(new SubTypesScanner(false /* don't exclude Object.class */), new ResourcesScanner())
-                .setUrls(ClasspathHelper.forClassLoader(classLoaders))
+                .setScanners(new SubTypesScanner(false /* don't exclude Object.class */),
+                        new ResourcesScanner())
+                .setUrls(ClasspathHelper.forPackage(packageName, classLoaders))
                 .filterInputsBy(filter)
                 .addClassLoaders(classLoadersList)
         );
-        return Sets.union(reflections.getSubTypesOf(Object.class),
-                reflections.getSubTypesOf(Enum.class));
+
+        Multimap<String, String> mmap = reflections.getStore().get(SubTypesScanner.class.getSimpleName());
+        return Sets.newHashSet(ReflectionUtils.forNames(mmap.values(), classLoadersList.toArray(new ClassLoader[0])));
     }
 
     public static boolean isAllowFindingInternalClasses() {

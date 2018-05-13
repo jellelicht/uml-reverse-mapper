@@ -11,7 +11,35 @@ Using reflection, UML Reverse Mapper scans your packages that contain your code.
 
 ### Using from the command-line
 
-Build the `urm-core` project with `mvn clean package` and grab the generated artifact `urm-core.jar`. Then you need the archive that will be analyzed. In this example we use `abstract-factory.jar` and assume the package name to be `com.iluwatar.abstractfactory`. Place the jar-files in the same directory and execute the following command.
+**urm-core.jar help text:**
+```
+usage: java -jar urm-core.jar
+ -f <file>                          write result to file instead of
+                                    console
+ -fi,--fieldIgnores <ignoreList>    comma separated list of ignored
+                                    fields, defaults to '$jacocoData'
+ -h,--help                          displays this help text
+ -i,--classIgnores <ignoreList>     comma separated list of ignored types
+ -mi,--methodIgnores <ignoreList>   comma separated list of ignored
+                                    methods, defaults to '$jacocoInit'
+ -p <packageList>                   comma separated list of domain
+                                    packages
+ -s,--presenter <[plant|graph]>     presenter to be used, defaults to
+                                    'plant'
+ -u <fileList>                      comma separated list of jars or other
+                                    java files to load
+EXAMPLES:
+1. java -jar urm-core.jar -p com.iluwatar.abstractfactory -i
+com.iluwatar.abstractfactory.Castle -u abstract-factory.jar
+2. java -cp abstract-factory.jar:urm-core.jar DomainMapperCli -p
+com.iluwatar.abstractfactory -i com.iluwatar.abstractfactory.Castle
+```
+
+Build the `urm-core` project with `mvn clean package` and grab the generated artifact `urm-core.jar`.
+
+Or grab the latest release from here: https://github.com/markusmo3/uml-reverse-mapper/releases
+
+Then you need the archive that will be analyzed. In this example we use `abstract-factory.jar` and assume the package name to be `com.iluwatar.abstractfactory`. Place the jar-files in the same directory and execute the following command.
 
     java -cp abstract-factory.jar:urm-core.jar DomainMapperCli -p com.iluwatar.abstractfactory -i com.iluwatar.abstractfactory.Castle
 
@@ -38,6 +66,15 @@ Add to your pom.xml the following:
 						<param>com.mycompany.mypackage.MyClass</param>
 						<param>com.mycompany.other_package.OtherClass</param>
 					</ignores>
+					<fieldIgnores>
+						<param>serialVersionUID</param>
+						<param>myIntegerField</param>
+					</fieldIgnores>
+					<methodIgnores>
+						<param>toString</param>
+						<param>valueOf</param>
+						<param>values</param>
+					</methodIgnores>
 				</configuration>
 				<executions>
 					<execution>

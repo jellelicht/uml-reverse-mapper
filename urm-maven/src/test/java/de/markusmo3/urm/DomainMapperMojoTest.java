@@ -25,18 +25,17 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
 public class DomainMapperMojoTest {
-    public static final String PROJECT_NAME = "domain-mapper-mojo-test";
+    private static final String PROJECT_NAME = "domain-mapper-mojo-test";
+
     @Spy
     File outputDirectory = new File("");
     @Mock
     MavenProject project;
-    @Spy
-    List<String> packages = new ArrayList<>();
-    @Spy
-    List<String> ignores = new ArrayList<>();
+
+    private List<String> packages = new ArrayList<>();
+    private List<String> ignores = new ArrayList<>();
     @InjectMocks
     DomainMapperMojo mojo = new DomainMapperMojo();
-    final List<Class<?>> dummyList = Arrays.<Class<?>>asList(String.class, Integer.class);
 
     @SuppressWarnings("unchecked")
     @Before
@@ -44,6 +43,8 @@ public class DomainMapperMojoTest {
         MockitoAnnotations.initMocks(this);
         when(project.getCompileClasspathElements()).thenReturn(Arrays.asList("foo", "bar"));
         when(project.getName()).thenReturn(PROJECT_NAME);
+        mojo.packages = packages;
+        mojo.ignores = ignores;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

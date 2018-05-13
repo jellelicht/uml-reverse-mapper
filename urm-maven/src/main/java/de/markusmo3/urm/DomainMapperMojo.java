@@ -1,5 +1,6 @@
 package de.markusmo3.urm;
 
+import de.markusmo3.urm.domain.*;
 import de.markusmo3.urm.presenters.Presenter;
 import de.markusmo3.urm.presenters.Representation;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
@@ -18,8 +19,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Mojo(name = "map", defaultPhase = LifecyclePhase.PROCESS_CLASSES, requiresDependencyResolution = ResolutionScope.COMPILE)
 public class DomainMapperMojo extends AbstractMojo {
@@ -28,16 +28,23 @@ public class DomainMapperMojo extends AbstractMojo {
     private File outputDirectory;
     @Component
     private MavenProject project;
+
     @Parameter(property = "map.packages", required = true)
-    private List<String> packages;
-    @Parameter(property = "map.ignores", required = false)
-    private List<String> ignores;
-    @Parameter(property = "presenter", required = false)
+    List<String> packages;
+
+    @Parameter(property = "map.ignores")
+    List<String> ignores;
+    @Parameter(property = "map.fieldIgnores")
+    private List<String> fieldIgnores;
+    @Parameter(property = "map.methodIgnores")
+    private List<String> methodIgnores;
+
+    @Parameter(property = "presenter")
     private String presenterString;
-    @Parameter(property = "map.skipForProjects", required = false)
+
+    @Parameter(property = "map.skipForProjects")
     private List<String> skipForProjects;
 
-    @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (skipForProjects != null && !skipForProjects.isEmpty()) {
             String projectName = project.getName();
@@ -48,7 +55,7 @@ public class DomainMapperMojo extends AbstractMojo {
             }
         }
 
-        if (packages.isEmpty())
+        if (packages == null || packages.isEmpty())
             throw new MojoFailureException("No packages defined for scanning.");
         try {
             Presenter presenter = Presenter.parse(presenterString);
@@ -64,6 +71,15 @@ public class DomainMapperMojo extends AbstractMojo {
 
             if (!Files.exists(path)) {
                 List<URL> projectClasspathList = getClasspathUrls();
+
+                if (fieldIgnores != null && !fieldIgnores.isEmpty()) {
+                    DomainClass.IGNORED_FIELDS = fieldIgnores;
+                }
+                if (methodIgnores != null && !methodIgnores.isEmpty()) {
+                    DomainClass.IGNORED_METHODS = methodIgnores;
+                }
+
+
                 DomainMapper mapper = DomainMapper.create(presenter, packages, ignores,
                         new URLClassLoader(projectClasspathList.toArray(new URL[projectClasspathList.size()])));
 

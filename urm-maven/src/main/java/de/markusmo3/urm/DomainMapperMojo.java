@@ -29,6 +29,10 @@ public class DomainMapperMojo extends AbstractMojo {
     @Component
     private MavenProject project;
 
+
+    @Parameter(defaultValue = true, property = "overwrite")
+    private boolean overwrite;
+
     @Parameter(property = "map.packages", required = true)
     List<String> packages;
 
@@ -58,6 +62,7 @@ public class DomainMapperMojo extends AbstractMojo {
         if (packages == null || packages.isEmpty())
             throw new MojoFailureException("No packages defined for scanning.");
         try {
+            System.out.println("going for " + presenterString);
             Presenter presenter = Presenter.parse(presenterString);
 
             String fileName = project.getName() + ".urm." + presenter.getFileEnding();
@@ -69,7 +74,7 @@ public class DomainMapperMojo extends AbstractMojo {
                 Reflections.log = null;
             }
 
-            if (!Files.exists(path)) {
+            if (!Files.exists(path) || overwrite) {
                 List<URL> projectClasspathList = getClasspathUrls();
 
                 if (fieldIgnores != null && !fieldIgnores.isEmpty()) {
